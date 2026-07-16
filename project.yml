@@ -1,0 +1,10 @@
+name: SysDVRClient
+options:
+  bundleIdPrefix: com.lu
+targets:
+  SysDVRClient:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: SysDVRClient

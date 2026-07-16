@@ -1,0 +1,44 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      - name: Build App (Unsigned)
+        run: |
+          xcodebuild -project SysDVRClient.xcodeproj \
+            -scheme SysDVRClient \
+            -configuration Release \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            clean build \
+            OBJROOT=$PWD/build \
+            SYMROOT=$PWD/build
+
+      - name: Package into IPA
+        run: |
+          mkdir Payload
+          cp -r build/Release-iphoneos/SysDVRClient.app Payload/
+          zip -r SysDVRClient.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SysDVRClient-iOS
+          path: SysDVRClient.ipa

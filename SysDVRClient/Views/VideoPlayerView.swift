@@ -118,36 +118,7 @@ struct VideoPlayerView: UIViewRepresentable {
         }
     }
 
-    static func dismantleUIView(_ uiView: VLCPlayerUIView, coordinator: ()) {
-        uiView.stop()
-    }
-}
-
-// MARK: - SwiftUI Wrapper
-
-struct VideoPlayerView: UIViewRepresentable {
-
-    let streamURL: String
-    let aspectFill: Bool
-    let onError: (String) -> Void
-
-    func makeUIView(context: Context) -> VLCPlayerUIView {
-        let view = VLCPlayerUIView()
-        view.onError = onError
-        return view
-    }
-
-    func updateUIView(_ uiView: VLCPlayerUIView, context: Context) {
-        uiView.setAspectFill(aspectFill)
-
-        let currentURL = uiView.mediaPlayer.media?.url?.absoluteString
-        if currentURL != streamURL {
-            uiView.stop()
-            uiView.play(url: streamURL)
-        }
-    }
-
-    static func dismantleUIView(_ uiView: VLCPlayerUIView, coordinator: ()) {
-        uiView.stop()
-    }
-}
+     static func dismantleUIView(_ uiView: VLCPlayerUIView, coordinator: ()) {
+         uiView.stop()
+     }
+ }

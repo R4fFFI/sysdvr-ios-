@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     runs-on: macos-latest
-    
+
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
@@ -19,48 +19,31 @@ jobs:
     - name: Generate Xcode Project
       run: xcodegen generate
 
-    - name: Install CocoaPods
-      run: |
-        sudo gem install cocoapods
-        pod repo update
-        pod install
+    - name: Install CocoaPods Dependencies
+      run: pod install
 
-    - name: Build Application
+    - name: Build App (Unsigned)
       run: |
-        xcodebuild build \
-          -workspace SysDVRClient.xcworkspace \
-          -scheme SysDVRClient \
-          -configuration Release \
-          -sdk iphoneos \
-          -derivedDataPath ./DerivedData \
-          CODE_SIGNING_ALLOWED=NO \
-          CODE_SIGNING_REQUIRED=NO \
-          2>&1 | tee build.log
+        xcodebuild -workspace SysDVRClient.xcworkspace \
+                   -scheme SysDVRClient \
+                   -configuration Release \
+                   -sdk iphoneos \
+                   CODE_SIGNING_ALLOWED=NO \
+                   CODE_SIGNING_REQUIRED=NO \
+                   clean build \
+                   OBJROOT=$PWD/build \
+                   SYMROOT=$PWD/build
 
-    - name: Check Build Output
-      if: always()
+    - name: Package into IPA
       run: |
-        if [ -f build.log ]; then
-          tail -100 build.log
-        fi
-        find ./DerivedData -name "*.app" -type d
-
-    - name: Create IPA
-      run: |
-        APP_PATH=$(find ./DerivedData -name "SysDVRClient.app" -type d | head -1)
-        if [ -z "$APP_PATH" ]; then
-          echo "ERROR: App not found!"
-          exit 1
-        fi
         mkdir -p Payload
+        APP_PATH=$(find . -type d -name "SysDVRClient.app" | head -n 1)
+        echo "Ditemukan file aplikasi di: $APP_PATH"
         cp -r "$APP_PATH" Payload/
-        cd Payload && zip -r ../SysDVRClient.ipa . && cd ..
-        ls -lh SysDVRClient.ipa
+        zip -r SysDVRClient.ipa Payload
 
-    - name: Upload Artifact
-      if: success()
+    - name: Upload IPA Artifact
       uses: actions/upload-artifact@v4
       with:
         name: SysDVRClient-iOS
         path: SysDVRClient.ipa
-        retention-days: 30

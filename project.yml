@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: com.lu
   deploymentTarget:
     iOS: "15.0"
+  useBaseInternationalization: false
 targets:
   SysDVRClient:
     type: application
@@ -13,6 +14,8 @@ targets:
     settings:
       PRODUCT_NAME: SysDVRClient
       SWIFT_VERSION: "5.9"
+      SWIFT_OBJC_BRIDGING_HEADER: ""
+      GCC_TREAT_WARNINGS_AS_ERRORS: "NO"
     info:
       path: SysDVRClient/Info.plist
       properties:
@@ -20,3 +23,12 @@ targets:
         NSLocalNetworkUsageDescription: "SysDVR needs local network access to connect to your Nintendo Switch"
         NSBonjourServices:
           - _services._dns-sd._udp
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight

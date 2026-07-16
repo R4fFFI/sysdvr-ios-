@@ -1,16 +1,15 @@
 import SwiftUI
 import MobileVLCKit
 
-// MARK: - UIKit VLC Player View
-
 final class VLCPlayerUIView: UIView {
 
-    private(set) var mediaPlayer = VLCMediaPlayer()
+    private(set) var mediaPlayer: VLCMediaPlayer
     private var retryCount = 0
     private let maxRetries = 3
     var onError: ((String) -> Void)?
 
     override init(frame: CGRect) {
+        mediaPlayer = VLCMediaPlayer()
         super.init(frame: frame)
         backgroundColor = .black
         mediaPlayer.drawable = self
@@ -18,7 +17,10 @@ final class VLCPlayerUIView: UIView {
     }
 
     required init?(coder: NSCoder) {
-        fatalError("init(coder:) not supported")
+        mediaPlayer = VLCMediaPlayer()
+        super.init(coder: coder)
+        mediaPlayer.drawable = self
+        mediaPlayer.delegate = self
     }
 
     func play(url: String) {
@@ -33,29 +35,20 @@ final class VLCPlayerUIView: UIView {
         }
 
         let media = VLCMedia(url: mediaURL)
-
-        // Low-latency tuning for SysDVR's 720p@30 H.264 stream
         media.addOptions([
-            // Network
-            "network-caching": 150,       // ms, low for gaming
+            "network-caching": 150,
             "clock-jitter": 0,
             "clock-synchro": 0,
-            "rtsp-tcp": true,             // Prefer TCP transport for RTSP
-
-            // Decoder
+            "rtsp-tcp": true,
             "codec": "avcodec",
-            "avcodec-skiploopfilter": 1,   // Skip deblock for speed
+            "avcodec-skiploopfilter": 1,
             "avcodec-skip-frame": 0,
             "avcodec-skip-idct": 0,
             "avcodec-fast": true,
             "avcodec-threads": 2,
-
-            // Demux
             "live-caching": 0,
             "file-caching": 0,
             "sout-mux-caching": 0,
-
-            // No audio buffering
             "audio-desync": 0,
         ])
 
@@ -71,12 +64,10 @@ final class VLCPlayerUIView: UIView {
         if fill {
             mediaPlayer.videoAspectRatio = UnsafeMutablePointer(mutating: ("16:9" as NSString).utf8String)
         } else {
-            mediaPlayer.videoAspectRatio = nil // Best fit
+            mediaPlayer.videoAspectRatio = nil
         }
     }
 }
-
-// MARK: - VLCMediaPlayerDelegate
 
 extension VLCPlayerUIView: VLCMediaPlayerDelegate {
 
@@ -102,6 +93,33 @@ extension VLCPlayerUIView: VLCMediaPlayerDelegate {
         default:
             break
         }
+    }
+}
+
+struct VideoPlayerView: UIViewRepresentable {
+
+    let streamURL: String
+    let aspectFill: Bool
+    let onError: (String) -> Void
+
+    func makeUIView(context: Context) -> VLCPlayerUIView {
+        let view = VLCPlayerUIView()
+        view.onError = onError
+        return view
+    }
+
+    func updateUIView(_ uiView: VLCPlayerUIView, context: Context) {
+        uiView.setAspectFill(aspectFill)
+
+        let currentURL = uiView.mediaPlayer.media?.url?.absoluteString
+        if currentURL != streamURL {
+            uiView.stop()
+            uiView.play(url: streamURL)
+        }
+    }
+
+    static func dismantleUIView(_ uiView: VLCPlayerUIView, coordinator: ()) {
+        uiView.stop()
     }
 }
 

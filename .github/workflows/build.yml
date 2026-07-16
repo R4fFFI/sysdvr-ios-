@@ -19,119 +19,50 @@ jobs:
     - name: Generate Xcode Project
       run: xcodegen generate
 
-    - name: Create Shared Scheme
-      run: |
-        mkdir -p SysDVRClient.xcodeproj/xcshareddata/xcschemes
-        cat > SysDVRClient.xcodeproj/xcshareddata/xcschemes/SysDVRClient.xcscheme << 'EOF'
-        <?xml version="1.0" encoding="UTF-8"?>
-        <Scheme
-           LastUpgradeVersion = "1540"
-           version = "1.3">
-           <BuildAction
-              parallelizeBuildables = "YES"
-              buildImplicitDependencies = "YES">
-              <BuildActionEntries>
-                 <BuildActionEntry
-                    buildForTesting = "YES"
-                    buildForRunning = "YES"
-                    buildForProfiling = "YES"
-                    buildForArchiving = "YES"
-                    buildForAnalyzing = "YES">
-                    <BuildableReference
-                       BuildableIdentifier = "primary"
-                       BlueprintIdentifier = "SysDVRClient"
-                       BuildableName = "SysDVRClient.app"
-                       BlueprintName = "SysDVRClient"
-                       ReferencedContainer = "container:SysDVRClient.xcodeproj">
-                    </BuildableReference>
-                 </BuildActionEntry>
-              </BuildActionEntries>
-           </BuildAction>
-           <LaunchAction
-              buildConfiguration = "Release"
-              executionConfiguration = "Release"
-              launchStyle = "0"
-              useCustomWorkingDirectory = "NO"
-              ignoresPersistentStateOnLaunch = "NO"
-              debugDocumentVersioning = "YES"
-              debugServiceExtension = "internal"
-              allowLocationSimulation = "YES">
-              <BuildableProductRunnable
-                 runnableDebuggingMode = "0">
-                 <BuildableReference
-                    BuildableIdentifier = "primary"
-                    BlueprintIdentifier = "SysDVRClient"
-                    BuildableName = "SysDVRClient.app"
-                    BlueprintName = "SysDVRClient"
-                    ReferencedContainer = "container:SysDVRClient.xcodeproj">
-                 </BuildableReference>
-              </BuildableProductRunnable>
-           </LaunchAction>
-           <ArchiveAction
-              buildConfiguration = "Release"
-              revealArchiveInOrganizer = "YES">
-              <BuildableReference
-                 BuildableIdentifier = "primary"
-                 BlueprintIdentifier = "SysDVRClient"
-                 BuildableName = "SysDVRClient.app"
-                 BlueprintName = "SysDVRClient"
-                 ReferencedContainer = "container:SysDVRClient.xcodeproj">
-              </BuildableReference>
-           </ArchiveAction>
-        </Scheme>
-        EOF
-
-    - name: Install CocoaPods Dependencies
+    - name: Install CocoaPods
       run: |
         sudo gem install cocoapods
         pod install
 
-    - name: List Available Schemes
-      run: xcodebuild -workspace SysDVRClient.xcworkspace -list
-
-    - name: Resolve Package Dependencies
-      run: xcodebuild -resolvePackageDependencies -workspace SysDVRClient.xcworkspace -scheme SysDVRClient
-
-    - name: Build App
+    - name: Build Application
       run: |
         xcodebuild build \
           -workspace SysDVRClient.xcworkspace \
           -scheme SysDVRClient \
           -configuration Release \
           -sdk iphoneos \
-          -destination 'generic/platform=iOS' \
+          -derivedDataPath ./DerivedData \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO \
           2>&1 | tee build.log
 
-    - name: Show Build Log
+    - name: Show Build Log (Last 100 lines)
       if: always()
-      run: tail -150 build.log
+      run: tail -100 build.log
 
     - name: Find Built App
       run: |
         echo "=== Searching for SysDVRClient.app ==="
-        find . -name "SysDVRClient.app" -type d
-        echo ""
-        echo "=== Build Contents ==="
-        ls -la ~/Library/Developer/Xcode/DerivedData/ 2>/dev/null | head -20 || echo "DerivedData not accessible"
+        find ./DerivedData -name "SysDVRClient.app" -type d
+        ls -lh ./DerivedData/Build/Products/Release-iphoneos/ 2>/dev/null || echo "Products dir not found"
 
-    - name: Package into IPA
+    - name: Create IPA
       run: |
         mkdir -p Payload
-        APP_PATH=$(find . -name "SysDVRClient.app" -type d | head -n 1)
-        echo "Found app at: $APP_PATH"
+        APP_PATH=$(find ./DerivedData -name "SysDVRClient.app" -type d | head -n 1)
         
         if [ -z "$APP_PATH" ]; then
           echo "ERROR: SysDVRClient.app not found!"
           exit 1
         fi
         
+        echo "Copying app from: $APP_PATH"
         cp -r "$APP_PATH" Payload/
         cd Payload && zip -r ../SysDVRClient.ipa . && cd ..
+        echo "IPA created:"
         ls -lh SysDVRClient.ipa
 
-    - name: Upload IPA Artifact
+    - name: Upload IPA
       if: success()
       uses: actions/upload-artifact@v4
       with:

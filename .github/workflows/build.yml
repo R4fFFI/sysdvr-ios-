@@ -10,35 +10,38 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+    - name: Install XcodeGen
+      run: brew install xcodegen
 
-      - name: Generate Xcode Project
-        run: xcodegen generate
+    - name: Generate Xcode Project
+      run: xcodegen generate
 
-      - name: Build App (Unsigned)
-        run: |
-          xcodebuild -project SysDVRClient.xcodeproj \
-            -scheme SysDVRClient \
-            -configuration Release \
-            -sdk iphoneos \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            clean build \
-            OBJROOT=build \
-            SYMROOT=build
+    - name: Install CocoaPods Dependencies
+      run: pod install
 
-      - name: Package into IPA
-        run: |
-          mkdir Payload
-          cp -r build/Release-iphoneos/SysDVRClient.app Payload/
-          zip -r SysDVRClient.ipa Payload
+    - name: Build App (Unsigned)
+      run: |
+        xcodebuild -workspace SysDVRClient.xcworkspace \
+                   -scheme SysDVRClient \
+                   -configuration Release \
+                   -sdk iphoneos \
+                   CODE_SIGNING_ALLOWED=NO \
+                   CODE_SIGNING_REQUIRED=NO \
+                   clean build \
+                   OBJROOT=$PWD/build \
+                   SYMROOT=$PWD/build
 
-      - name: Upload IPA Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: SysDVRClient-iOS
-          path: SysDVRClient.ipa
+    - name: Package into IPA
+      run: |
+        mkdir Payload
+        cp -r build/Release-iphoneos/SysDVRClient.app Payload/
+        zip -r SysDVRClient.ipa Payload
+
+    - name: Upload IPA Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SysDVRClient-iOS
+        path: SysDVRClient.ipa

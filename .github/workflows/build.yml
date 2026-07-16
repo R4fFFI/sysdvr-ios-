@@ -20,24 +20,33 @@ jobs:
       run: xcodegen generate
 
     - name: Install CocoaPods Dependencies
-      run: pod install
+      run: |
+        gem install cocoapods
+        pod install
 
-    - name: Build App (Unsigned)
+    - name: Build App
       run: |
         xcodebuild -workspace SysDVRClient.xcworkspace \
                    -scheme SysDVRClient \
                    -configuration Release \
                    -sdk iphoneos \
+                   -derivedDataPath build \
                    CODE_SIGNING_ALLOWED=NO \
                    CODE_SIGNING_REQUIRED=NO \
-                   clean build \
-                   OBJROOT=$PWD/build \
-                   SYMROOT=$PWD/build
+                   clean build
+
+    - name: Locate App
+      run: find build -name "SysDVRClient.app" -type d
 
     - name: Package into IPA
       run: |
-        mkdir Payload
-        cp -r build/Release-iphoneos/SysDVRClient.app Payload/
+        APP_PATH=$(find build -name "SysDVRClient.app" -type d | head -1)
+        if [ -z "$APP_PATH" ]; then
+          echo "Error: SysDVRClient.app not found"
+          exit 1
+        fi
+        mkdir -p Payload
+        cp -r "$APP_PATH" Payload/
         zip -r SysDVRClient.ipa Payload
 
     - name: Upload IPA Artifact

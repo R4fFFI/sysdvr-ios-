@@ -1,6 +1,8 @@
 name: SysDVRClient
 options:
   bundleIdPrefix: com.lu
+  deploymentTarget:
+    iOS: "15.0"
 targets:
   SysDVRClient:
     type: application
@@ -8,3 +10,13 @@ targets:
     deploymentTarget: "15.0"
     sources:
       - path: SysDVRClient
+    settings:
+      PRODUCT_NAME: SysDVRClient
+      SWIFT_VERSION: "5.9"
+    info:
+      path: SysDVRClient/Info.plist
+      properties:
+        UIMainStoryboardFile: ""
+        NSLocalNetworkUsageDescription: "SysDVR needs local network access to connect to your Nintendo Switch"
+        NSBonjourServices:
+          - _services._dns-sd._udp
